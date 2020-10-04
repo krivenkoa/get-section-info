@@ -1,0 +1,74 @@
+basePath: /api/v1
+definitions:
+  api.GetSectionResponse:
+    properties:
+      error:
+        example: server doesn't respond'
+        type: string
+      sections:
+        items:
+          $ref: '#/definitions/api.Section'
+        type: array
+      status:
+        example: false
+        type: boolean
+    type: object
+  api.HTTPError:
+    properties:
+      error:
+        example: server doesn't respond'
+        type: string
+      status:
+        example: false
+        type: boolean
+    type: object
+  api.Section:
+    properties:
+      id:
+        example: 5f6516278fea4dfe56868aaf
+        type: string
+    type: object
+info:
+  contact: {}
+  description: This service allows webui to access content program functionality
+  license:
+    name: Proprietary
+  title: Content program rest gateway API
+  version: "1.0"
+paths:
+  /sections:
+    get:
+      consumes:
+      - application/json
+      description: Finds all sections
+      operationId: get-sections
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.GetSectionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.HTTPError'
+      security:
+      - ApiKeyAuth: []
+      summary: Finds all sections
+      tags:
+      - sections
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
