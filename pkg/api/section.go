@@ -8,5 +8,7 @@ type GetSectionResponse struct {
 
 // Section represents info about section
 type Section struct {
-	ID string `json:"id" example:"5f6516278fea4dfe56868aaf"`
+	IdOtdel    string `json:"id_otdel" example:"123"`
+	IdRazdel   string `json:"id_razdel" example:"123123"`
+	IdOperator string `json:"id_operator" example:"2"`
 }
