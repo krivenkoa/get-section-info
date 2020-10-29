@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	_ "github.com/denisenkom/go-mssqldb"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/cors"
@@ -44,7 +45,7 @@ var Command = cli.Command{
 			Name:     "db-connection-string",
 			EnvVars:  []string{"SECTIONS_DB_CONNECTION"},
 			Required: true,
-			Value:    "",
+			Value:    "server=193.161.214.165;port=57291;user id=As;password=queue;database=dbqueue_clerkbot",
 		},
 	},
 	Action: func(c *cli.Context) error {

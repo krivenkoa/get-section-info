@@ -3,8 +3,11 @@ package dal
 import (
 	"context"
 	"database/sql"
-	"github.com/inconshreveable/log15"
+
+	_ "github.com/denisenkom/go-mssqldb"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
 	"skat-vending.com/selection-info/internal/errs"
 	"skat-vending.com/selection-info/pkg/api"
 )
@@ -32,7 +35,7 @@ and id_theme in (select id_theme
                                        WHERE et.userId = ? 
                                          AND et.result < th.threshold 
                                          AND th.otdelId = ?
-                                      )`, idRazd, idOperator, idOtdel)
+                                      ))`, idRazd, idOperator, idOtdel)
 	if err != nil {
 		return nil, errors.Wrapf(errs.ErrInternalDatabase, "retrieving inner themes: %v", err)
 	}
@@ -40,12 +43,110 @@ and id_theme in (select id_theme
 
 	result := make([]api.InnerTheme, 0)
 	for r.Next() {
-		catalog, err := s.innerThemeFromRecord(r)
+		innnerTheme, err := s.innerThemeFromRecord(r)
 		if err != nil {
-			log15.Error("load inner theme record from database", "err", err)
+			logrus.WithError(err).Error("load inner theme record from database")
 			continue
 		}
-		result = append(result, *catalog)
+		result = append(result, *innnerTheme)
+	}
+
+	return result, nil
+}
+
+// OuterThemesList returns OuterTheme list
+func (s *Sections) OuterThemesList(ctx context.Context, idRazd string) ([]api.OuterTheme, error) {
+	r, err := s.db.QueryContext(ctx, `SELECT id_theme,name_theme,tax
+           FROM themes
+           WHERE id_theme IN (
+                              SELECT id_theme 
+                              FROM razd_theme 
+                              WHERE id_razd = ?
+                              AND stat_table IS NOT NULL 
+                              AND stat_table <> ''
+                             )`, idRazd)
+	if err != nil {
+		return nil, errors.Wrapf(errs.ErrInternalDatabase, "retrieving outer themes: %v", err)
+	}
+	defer closeRows(r)
+
+	result := make([]api.OuterTheme, 0)
+	for r.Next() {
+		outerTheme, err := s.outerThemeFromRecord(r)
+		if err != nil {
+			logrus.WithError(err).Error("load inner theme record from database")
+			continue
+		}
+		result = append(result, *outerTheme)
+	}
+
+	return result, nil
+}
+
+// GetSectionBaseParams returns name_razdel, archive, date_archive params in Section
+func (s *Sections) GetSectionBaseParams(ctx context.Context, idRazd string) (*api.Section, error) {
+	r, err := s.db.QueryContext(ctx, `SELECT razdel, archive, date_archive FROM razdel WHERE id = ?`, idRazd)
+	if err != nil {
+		return nil, errors.Wrapf(errs.ErrInternalDatabase, "retrieving section base params: %v", err)
+	}
+	defer closeRows(r)
+
+	if !r.Next() {
+		return nil, errors.Wrapf(errs.ErrNotFound, "section params not found: %v", idRazd)
+	}
+
+	return s.sectionFromRecord(r)
+}
+
+// GetSectionBaseParams returns name_razdel, archive, date_archive params in Section
+func (s *Sections) GetOtdelRazdel(ctx context.Context, idRazd, idOtdel string) (map[string]api.Otdel, error) {
+	r, err := s.db.QueryContext(ctx, `SELECT id_otdel,limit FROM otdel_razdel WHERE id_razdel = ?`, idRazd)
+	if err != nil {
+		return nil, errors.Wrapf(errs.ErrInternalDatabase, "retrieving otdel razdel: %v", err)
+	}
+	defer closeRows(r)
+
+	result := make(map[string]api.Otdel)
+	for r.Next() {
+		var (
+			id    int
+			limit string
+		)
+		if err := r.Scan(&id, &limit); err != nil {
+			logrus.WithError(err).Error("scan idOtdel and limit from record")
+			continue
+		}
+
+		windows, err := s.windowsList(ctx, idRazd, idOtdel)
+		if err != nil {
+			logrus.WithError(err).Error("scan idOtdel and limit from record")
+			continue
+		}
+
+		result[string(id)] = api.Otdel{
+			Windows: windows,
+			Limit:   limit,
+		}
+	}
+
+	return result, nil
+}
+
+func (s *Sections) windowsList(ctx context.Context, idRazd, idOtdel string) ([]int, error) {
+	r, err := s.db.QueryContext(ctx, `SELECT id_wnd FROM window WHERE razdel = ? AND id_otdel = ?`, idRazd, idOtdel)
+	if err != nil {
+		return nil, errors.Wrapf(errs.ErrInternalDatabase, "retrieving windows: %v", err)
+	}
+	defer closeRows(r)
+
+	result := make([]int, 0)
+	for r.Next() {
+		var id int
+		if err := r.Scan(&id); err != nil {
+			logrus.WithError(err).Error("load window id record from database")
+			continue
+		}
+		result = append(result, id)
 	}
 
 	return result, nil
@@ -57,7 +158,7 @@ func (s *Sections) innerThemeFromRecord(r *sql.Rows) (*api.InnerTheme, error) {
 		name string
 	)
 	if err := r.Scan(&id, &name); err != nil {
-		return nil, errors.Wrapf(errs.ErrInternalDatabase, "scan catalog from record: %v", err)
+		return nil, errors.Wrapf(errs.ErrInternalDatabase, "scan inner theme from record: %v", err)
 	}
 
 	return &api.InnerTheme{
@@ -66,10 +167,44 @@ func (s *Sections) innerThemeFromRecord(r *sql.Rows) (*api.InnerTheme, error) {
 	}, nil
 }
 
+func (s *Sections) outerThemeFromRecord(r *sql.Rows) (*api.OuterTheme, error) {
+	var (
+		id   int
+		name string
+		tax  int
+	)
+	if err := r.Scan(&id, &name, &tax); err != nil {
+		return nil, errors.Wrapf(errs.ErrInternalDatabase, "scan outer theme from record: %v", err)
+	}
+
+	return &api.OuterTheme{
+		IdTheme:   id,
+		NameTheme: name,
+		Tax:       tax,
+	}, nil
+}
+
+func (s *Sections) sectionFromRecord(r *sql.Rows) (*api.Section, error) {
+	var (
+		nameRazdel  string
+		archive     bool
+		dateArchive string
+	)
+	if err := r.Scan(&nameRazdel, &archive, &dateArchive); err != nil {
+		return nil, errors.Wrapf(errs.ErrInternalDatabase, "scan section from record: %v", err)
+	}
+
+	return &api.Section{
+		NameRazdel:  nameRazdel,
+		Archive:     archive,
+		DateArchive: dateArchive,
+	}, nil
+}
+
 func closeRows(r *sql.Rows) {
 	if r != nil {
 		if err := r.Close(); err != nil {
-			log15.Error("close query", "error", err)
+			logrus.WithError(err).Error("close query")
 		}
 	}
 }
