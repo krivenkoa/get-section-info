@@ -2,6 +2,30 @@ package api
 
 // Response is a generic response structure.
 type Response struct {
-	Status bool   `json:"status" example:"false"`
-	Error  string `json:"error" example:"server doesn't respond'"`
+	Success          bool             `json:"success" example:"false"`
+	Message          string           `json:"message" example:"qwerty"`
+	NameRazdel       string           `json:"name_razdel" example:"qwerty"`
+	Archive          bool             `json:"archive" example:"false"`
+	DateArchive      string           `json:"date_archive" example:"2016-02-20"`
+	CountInnerThemes int              `json:"count_inner_themes" example:"0"`
+	CountOuterThemes int              `json:"count_outer_themes" example:"0"`
+	InnerThemes      []InnerThemes    `json:"inner_themes" example:""`
+	OuterThemes      []OuterThemes    `json:"outer_themes" example:""`
+	OtdelRazdel      map[string]Otdel `json:"otdel_razdel" example:""`
+}
+
+type InnerThemes struct {
+	IdTheme   int    `json:"id_theme" example:"123"`
+	NameTheme string `json:"name_theme" example:""`
+}
+
+type OuterThemes struct {
+	IdTheme   int    `json:"id_theme" example:"123"`
+	NameTheme string `json:"name_theme" example:""`
+	Tax       int    `json:"tax" example:"2344"`
+}
+
+type Otdel struct {
+	Windows []int  `json:"windows" example:""`
+	Limit   string `json:"limit" example:""`
 }
