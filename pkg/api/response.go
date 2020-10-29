@@ -1,7 +1,7 @@
 package api
 
-// Response is a generic response structure.
-type Response struct {
+// Section is a response structure.
+type Section struct {
 	Success          bool             `json:"success" example:"false"`
 	Message          string           `json:"message" example:"qwerty"`
 	NameRazdel       string           `json:"name_razdel" example:"qwerty"`

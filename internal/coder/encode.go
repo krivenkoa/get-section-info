@@ -18,9 +18,9 @@ const defaultAccept = ContentTypeJSON
 func WriteError(w http.ResponseWriter, r *http.Request, statusCode int, error string) error {
 	inferred := inferAccept(r)
 	return wrapper.Wrap(writeData(w, &api.HTTPError{
-		Response: api.Response{
-			Status: false,
-			Error:  error,
+		Section: api.Section{
+			Success: false,
+			Message: error,
 		},
 	}, statusCode, inferred, middleware.GetReqID(r.Context())), "writing errors")
 }
