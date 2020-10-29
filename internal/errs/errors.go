@@ -14,4 +14,7 @@ var (
 
 	// ErrNotFound represents entity not found error
 	ErrNotFound = errors.New("not found")
+
+	// ErrInternalDatabase represents internal database error
+	ErrInternalDatabase = errors.New("internal database error")
 )

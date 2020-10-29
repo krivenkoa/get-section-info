@@ -1,6 +1,7 @@
 package run
 
 import (
+	"database/sql"
 	"net/http"
 	"time"
 
@@ -23,15 +24,27 @@ var Command = cli.Command{
 		&cli.StringFlag{
 			Name:     "log-level",
 			Usage:    "warn",
-			EnvVars:  []string{"PHOENIX_LOG_LEVEL"},
+			EnvVars:  []string{"SECTIONS_LOG_LEVEL"},
 			Required: true,
 			Value:    "warn",
 		},
 		&cli.StringFlag{
 			Name:     "listen-addr",
-			EnvVars:  []string{"PHOENIX_LISTEN_ADDR"},
+			EnvVars:  []string{"SECTIONS_LISTEN_ADDR"},
 			Required: true,
 			Value:    ":8080",
+		},
+		&cli.StringFlag{
+			Name:     "db-driver-name",
+			EnvVars:  []string{"SECTIONS_DB_DRIVER"},
+			Required: true,
+			Value:    "mssql",
+		},
+		&cli.StringFlag{
+			Name:     "db-connection-string",
+			EnvVars:  []string{"SECTIONS_DB_CONNECTION"},
+			Required: true,
+			Value:    "",
 		},
 	},
 	Action: func(c *cli.Context) error {
@@ -41,7 +54,19 @@ var Command = cli.Command{
 		}
 		logrus.SetLevel(lLevel)
 
-		sectionService := service.NewSections()
+		connectionString := c.String("db-connection-string")
+		driverName := c.String("db-driver-name")
+		db, err := sql.Open(driverName, connectionString)
+		if err != nil {
+			return errors.Wrapf(err, "connect to database %s with connection string %q", driverName, connectionString)
+		}
+		defer func() {
+			if err := db.Close(); err != nil {
+				logrus.WithError(err).Error("closing db")
+			}
+		}()
+
+		sectionService := service.NewSections(db)
 
 		r := chi.NewRouter()
 		r.Use(middleware.RequestID)
