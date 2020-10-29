@@ -7,7 +7,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"skat-vending.com/selection-info/internal/coder"
-	"skat-vending.com/selection-info/pkg/api"
 )
 
 // GetSections godoc
@@ -33,13 +32,7 @@ func (s *Service) getSections(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := api.GetSectionResponse{
-		Response: api.Response{
-			Status: true,
-		},
-		Sections: result,
-	}
-	if err := coder.WriteData(w, r, &resp, http.StatusOK); err != nil {
+	if err := coder.WriteData(w, r, result, http.StatusOK); err != nil {
 		logrus.WithError(err).Error("getSections writing response")
 		return
 	}

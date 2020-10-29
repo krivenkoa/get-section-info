@@ -17,7 +17,8 @@ func NewSections() *Sections {
 }
 
 // Get returns all sections info
-func (s *Sections) Get(ctx context.Context) ([]api.Section, error) {
-	ss := make([]api.Section, 0)
-	return ss, nil
+func (s *Sections) Get(ctx context.Context) (*api.Section, error) {
+	section := &api.Section{}
+
+	return section, nil
 }
