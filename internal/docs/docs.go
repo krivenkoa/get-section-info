@@ -46,11 +46,22 @@ var doc = `{
                 ],
                 "summary": "Finds all sections",
                 "operationId": "get-sections",
+                "parameters": [
+                    {
+                        "description": "sections request",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.SectionRequest"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.GetSectionResponse"
+                            "$ref": "#/definitions/api.Section"
                         }
                     },
                     "400": {
@@ -76,44 +87,164 @@ var doc = `{
         }
     },
     "definitions": {
-        "api.GetSectionResponse": {
+        "api.HTTPError": {
             "type": "object",
             "properties": {
-                "error": {
-                    "type": "string",
-                    "example": "server doesn't respond'"
+                "archive": {
+                    "type": "boolean",
+                    "example": false
                 },
-                "sections": {
+                "count_inner_themes": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "count_outer_themes": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "date_archive": {
+                    "type": "string",
+                    "example": "2016-02-20"
+                },
+                "inner_themes": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/api.Section"
+                        "$ref": "#/definitions/api.InnerTheme"
                     }
                 },
-                "status": {
+                "message": {
+                    "type": "string",
+                    "example": "qwerty"
+                },
+                "name_razdel": {
+                    "type": "string",
+                    "example": "qwerty"
+                },
+                "otdel_razdel": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/api.Otdel"
+                    }
+                },
+                "outer_themes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.OuterTheme"
+                    }
+                },
+                "success": {
                     "type": "boolean",
                     "example": false
                 }
             }
         },
-        "api.HTTPError": {
+        "api.InnerTheme": {
             "type": "object",
             "properties": {
-                "error": {
-                    "type": "string",
-                    "example": "server doesn't respond'"
+                "id_theme": {
+                    "type": "integer",
+                    "example": 123
                 },
-                "status": {
-                    "type": "boolean",
-                    "example": false
+                "name_theme": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.Otdel": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "string"
+                },
+                "windows": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
+        "api.OuterTheme": {
+            "type": "object",
+            "properties": {
+                "id_theme": {
+                    "type": "integer",
+                    "example": 123
+                },
+                "name_theme": {
+                    "type": "string"
+                },
+                "tax": {
+                    "type": "integer",
+                    "example": 2344
                 }
             }
         },
         "api.Section": {
             "type": "object",
             "properties": {
-                "id": {
+                "archive": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "count_inner_themes": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "count_outer_themes": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "date_archive": {
                     "type": "string",
-                    "example": "5f6516278fea4dfe56868aaf"
+                    "example": "2016-02-20"
+                },
+                "inner_themes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.InnerTheme"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "qwerty"
+                },
+                "name_razdel": {
+                    "type": "string",
+                    "example": "qwerty"
+                },
+                "otdel_razdel": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/api.Otdel"
+                    }
+                },
+                "outer_themes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.OuterTheme"
+                    }
+                },
+                "success": {
+                    "type": "boolean",
+                    "example": false
+                }
+            }
+        },
+        "api.SectionRequest": {
+            "type": "object",
+            "properties": {
+                "id_operator": {
+                    "type": "string",
+                    "example": "2"
+                },
+                "id_otdel": {
+                    "type": "string",
+                    "example": "123"
+                },
+                "id_razdel": {
+                    "type": "string",
+                    "example": "123123"
                 }
             }
         }

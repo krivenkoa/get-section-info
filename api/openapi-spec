@@ -1,31 +1,115 @@
 basePath: /api/v1
 definitions:
-  api.GetSectionResponse:
+  api.HTTPError:
     properties:
-      error:
-        example: server doesn't respond'
+      archive:
+        example: false
+        type: boolean
+      count_inner_themes:
+        example: 0
+        type: integer
+      count_outer_themes:
+        example: 0
+        type: integer
+      date_archive:
+        example: "2016-02-20"
         type: string
-      sections:
+      inner_themes:
         items:
-          $ref: '#/definitions/api.Section'
+          $ref: '#/definitions/api.InnerTheme'
         type: array
-      status:
+      message:
+        example: qwerty
+        type: string
+      name_razdel:
+        example: qwerty
+        type: string
+      otdel_razdel:
+        additionalProperties:
+          $ref: '#/definitions/api.Otdel'
+        type: object
+      outer_themes:
+        items:
+          $ref: '#/definitions/api.OuterTheme'
+        type: array
+      success:
         example: false
         type: boolean
     type: object
-  api.HTTPError:
+  api.InnerTheme:
     properties:
-      error:
-        example: server doesn't respond'
+      id_theme:
+        example: 123
+        type: integer
+      name_theme:
         type: string
-      status:
-        example: false
-        type: boolean
+    type: object
+  api.Otdel:
+    properties:
+      limit:
+        type: string
+      windows:
+        items:
+          type: integer
+        type: array
+    type: object
+  api.OuterTheme:
+    properties:
+      id_theme:
+        example: 123
+        type: integer
+      name_theme:
+        type: string
+      tax:
+        example: 2344
+        type: integer
     type: object
   api.Section:
     properties:
-      id:
-        example: 5f6516278fea4dfe56868aaf
+      archive:
+        example: false
+        type: boolean
+      count_inner_themes:
+        example: 0
+        type: integer
+      count_outer_themes:
+        example: 0
+        type: integer
+      date_archive:
+        example: "2016-02-20"
+        type: string
+      inner_themes:
+        items:
+          $ref: '#/definitions/api.InnerTheme'
+        type: array
+      message:
+        example: qwerty
+        type: string
+      name_razdel:
+        example: qwerty
+        type: string
+      otdel_razdel:
+        additionalProperties:
+          $ref: '#/definitions/api.Otdel'
+        type: object
+      outer_themes:
+        items:
+          $ref: '#/definitions/api.OuterTheme'
+        type: array
+      success:
+        example: false
+        type: boolean
+    type: object
+  api.SectionRequest:
+    properties:
+      id_operator:
+        example: "2"
+        type: string
+      id_otdel:
+        example: "123"
+        type: string
+      id_razdel:
+        example: "123123"
         type: string
     type: object
 info:
@@ -42,13 +126,20 @@ paths:
       - application/json
       description: Finds all sections
       operationId: get-sections
+      parameters:
+      - description: sections request
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/api.SectionRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.GetSectionResponse'
+            $ref: '#/definitions/api.Section'
         "400":
           description: Bad Request
           schema:
