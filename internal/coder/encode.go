@@ -8,26 +8,20 @@ import (
 	wrapper "github.com/pkg/errors"
 
 	"skat-vending.com/selection-info/internal/errs"
-	"skat-vending.com/selection-info/pkg/api"
 )
 
 // defaultAccept
 const defaultAccept = ContentTypeJSON
 
 // WriteError writes error to response
-func WriteError(w http.ResponseWriter, r *http.Request, statusCode int, error string) error {
+func WriteError(w http.ResponseWriter, r *http.Request, body interface{}, statusCode int) error {
 	inferred := inferAccept(r)
-	return wrapper.Wrap(writeData(w, &api.HTTPError{
-		Section: api.Section{
-			Success: false,
-			Message: error,
-		},
-	}, statusCode, inferred, middleware.GetReqID(r.Context())), "writing errors")
+	return wrapper.Wrap(writeData(w, body, statusCode, inferred, middleware.GetReqID(r.Context())), "writing errors")
 }
 
 // WriteBadCode writes bad request response code
-func WriteBadCode(w http.ResponseWriter, r *http.Request, statusCode int, error string) error {
-	return wrapper.Wrap(WriteError(w, r, statusCode, error), "error writing bad status code")
+func WriteBadCode(w http.ResponseWriter, r *http.Request, body interface{}, statusCode int) error {
+	return wrapper.Wrap(WriteError(w, r, body, statusCode), "error writing bad status code")
 }
 
 // WriteData writes response data
@@ -35,7 +29,7 @@ func WriteData(w http.ResponseWriter, r *http.Request, body interface{}, respons
 	inferred := inferAccept(r)
 	if inferred == "" {
 		w.Header().Add("Content-Type", defaultAccept)
-		WriteError(w, r, http.StatusUnsupportedMediaType, errs.ErrUnsupportedMedia.Error())
+		WriteError(w, r, body, http.StatusUnsupportedMediaType)
 		return errs.ErrUnsupportedMedia
 	}
 

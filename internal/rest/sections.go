@@ -3,11 +3,12 @@ package rest
 import (
 	"context"
 	"net/http"
-	"skat-vending.com/selection-info/pkg/api"
 
 	"github.com/sirupsen/logrus"
 
 	"skat-vending.com/selection-info/internal/coder"
+	"skat-vending.com/selection-info/internal/utils"
+	"skat-vending.com/selection-info/pkg/api"
 )
 
 // GetSections godoc
@@ -34,7 +35,16 @@ func (s *Service) getSections(w http.ResponseWriter, r *http.Request) {
 	result, err := s.Sections.Get(context.Background(), req)
 	if err != nil {
 		logrus.WithError(err).Errorf("getSections find all sections")
-		if err := coder.WriteError(w, r, http.StatusInternalServerError, err.Error()); err != nil {
+		if len(result.Description) == 0 {
+			result.Description = []api.Description{
+				{
+					Message: "getSections find all sections",
+				},
+			}
+		}
+		result.Description[0].Stacktrace = utils.String(err.Error())
+
+		if err := coder.WriteError(w, r, result, http.StatusInternalServerError); err != nil {
 			logrus.WithError(err).Error("getSections write error")
 		}
 		return

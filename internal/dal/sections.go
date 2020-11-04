@@ -3,12 +3,14 @@ package dal
 import (
 	"context"
 	"database/sql"
+	"fmt"
 
 	_ "github.com/denisenkom/go-mssqldb"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"skat-vending.com/selection-info/internal/errs"
+	"skat-vending.com/selection-info/internal/utils"
 	"skat-vending.com/selection-info/pkg/api"
 )
 
@@ -23,9 +25,9 @@ func NewSection(db *sql.DB) *Sections {
 }
 
 // InnerThemesList returns InnerTheme list
-func (s *Sections) InnerThemesList(ctx context.Context, idRazd, idOperator, idOtdel string) ([]api.InnerTheme, error) {
-	r, err := s.db.QueryContext(ctx, `SELECT id_theme, name_theme from themes where isnull(archive,0)=0 
-and id_theme in (select id_theme 
+func (s *Sections) InnerThemesList(ctx context.Context, idRazd, idOperator, idOtdel string) ([]api.InnerTheme, *api.Description, error) {
+	sql := `SELECT id_theme, name_theme from themes where isnull(archive,0)=0 
+				and id_theme in (select id_theme 
                  from razd_theme 
                     where id_razd = ?
                   AND ISNULL(stat_table, '') = ''
@@ -35,9 +37,15 @@ and id_theme in (select id_theme
                                        WHERE et.userId = ? 
                                          AND et.result < th.threshold 
                                          AND th.otdelId = ?
-                                      ))`, idRazd, idOperator, idOtdel)
+                                      ))`
+
+	r, err := s.db.QueryContext(ctx, sql, idRazd, idOperator, idOtdel)
 	if err != nil {
-		return nil, errors.Wrapf(errs.ErrInternalDatabase, "retrieving inner themes: %v", err)
+		description := &api.Description{
+			Message: "retrieving inner themes",
+			Reason:  utils.String(fmt.Sprintf("%s; idRazd=%s, idOperator=%s, idOtdel=%s", sql, idRazd, idOperator, idOtdel)),
+		}
+		return nil, description, errors.Wrapf(errs.ErrInternalDatabase, "retrieving inner themes: %v", err)
 	}
 	defer closeRows(r)
 
@@ -51,12 +59,12 @@ and id_theme in (select id_theme
 		result = append(result, *innnerTheme)
 	}
 
-	return result, nil
+	return result, nil, nil
 }
 
 // OuterThemesList returns OuterTheme list
-func (s *Sections) OuterThemesList(ctx context.Context, idRazd string) ([]api.OuterTheme, error) {
-	r, err := s.db.QueryContext(ctx, `SELECT id_theme,name_theme,tax
+func (s *Sections) OuterThemesList(ctx context.Context, idRazd string) ([]api.OuterTheme, *api.Description, error) {
+	sql := `SELECT id_theme,name_theme,tax
            FROM themes
            WHERE id_theme IN (
                               SELECT id_theme 
@@ -64,9 +72,15 @@ func (s *Sections) OuterThemesList(ctx context.Context, idRazd string) ([]api.Ou
                               WHERE id_razd = ?
                               AND stat_table IS NOT NULL 
                               AND stat_table <> ''
-                             )`, idRazd)
+                             )`
+
+	r, err := s.db.QueryContext(ctx, sql, idRazd)
 	if err != nil {
-		return nil, errors.Wrapf(errs.ErrInternalDatabase, "retrieving outer themes: %v", err)
+		description := &api.Description{
+			Message: "retrieving outer themes",
+			Reason:  utils.String(fmt.Sprintf("%s; idRazd=%s", sql, idRazd)),
+		}
+		return nil, description, errors.Wrapf(errs.ErrInternalDatabase, "retrieving outer themes: %v", err)
 	}
 	defer closeRows(r)
 
@@ -80,29 +94,52 @@ func (s *Sections) OuterThemesList(ctx context.Context, idRazd string) ([]api.Ou
 		result = append(result, *outerTheme)
 	}
 
-	return result, nil
+	return result, nil, nil
 }
 
 // GetSectionBaseParams returns name_razdel, archive, date_archive params in Section
-func (s *Sections) GetSectionBaseParams(ctx context.Context, idRazd string) (*api.Section, error) {
-	r, err := s.db.QueryContext(ctx, `SELECT razdel, archive, date_archive FROM razdel WHERE id = ?`, idRazd)
+func (s *Sections) GetSectionBaseParams(ctx context.Context, idRazd string) (*api.Section, *api.Description, error) {
+	sql := `SELECT razdel, archive, date_archive FROM razdel WHERE id = ?`
+	r, err := s.db.QueryContext(ctx, sql, idRazd)
 	if err != nil {
-		return nil, errors.Wrapf(errs.ErrInternalDatabase, "retrieving section base params: %v", err)
+		description := &api.Description{
+			Message: "retrieving section base params",
+			Reason:  utils.String(fmt.Sprintf("sql: %s; idRazd=%s", sql, idRazd)),
+		}
+		return nil, description, errors.Wrapf(errs.ErrInternalDatabase, "retrieving section base params: %v", err)
 	}
 	defer closeRows(r)
 
 	if !r.Next() {
-		return nil, errors.Wrapf(errs.ErrNotFound, "section params not found: %v", idRazd)
+		description := &api.Description{
+			Message: "section params not found",
+			Reason:  utils.String(fmt.Sprintf("sql: %s; idRazd=%s", sql, idRazd)),
+		}
+		return nil, description, errors.Wrapf(errs.ErrNotFound, "section params not found: %v", idRazd)
 	}
 
-	return s.sectionFromRecord(r)
+	res, err := s.sectionFromRecord(r)
+	if err != nil {
+		description := &api.Description{
+			Message: "convert section base params from record",
+			Reason:  utils.String(fmt.Sprintf("sql: %s; idRazd=%s", sql, idRazd)),
+		}
+		return nil, description, err
+	}
+
+	return res, nil, nil
 }
 
 // GetSectionBaseParams returns name_razdel, archive, date_archive params in Section
-func (s *Sections) GetOtdelRazdel(ctx context.Context, idRazd, idOtdel string) (map[string]api.Otdel, error) {
-	r, err := s.db.QueryContext(ctx, `SELECT id_otdel,limit FROM otdel_razdel WHERE id_razdel = ?`, idRazd)
+func (s *Sections) GetOtdelRazdel(ctx context.Context, idRazd, idOtdel string) (map[string]api.Otdel, *api.Description, error) {
+	sql := `SELECT id_otdel,limit FROM otdel_razdel WHERE id_razdel = ?`
+	r, err := s.db.QueryContext(ctx, sql, idRazd)
 	if err != nil {
-		return nil, errors.Wrapf(errs.ErrInternalDatabase, "retrieving otdel razdel: %v", err)
+		description := &api.Description{
+			Message: "retrieving inner themes",
+			Reason:  utils.String(fmt.Sprintf("%s; idRazd=%s, idOtdel=%s", sql, idRazd, idOtdel)),
+		}
+		return nil, description, errors.Wrapf(errs.ErrInternalDatabase, "retrieving otdel razdel: %v", err)
 	}
 	defer closeRows(r)
 
@@ -129,11 +166,12 @@ func (s *Sections) GetOtdelRazdel(ctx context.Context, idRazd, idOtdel string) (
 		}
 	}
 
-	return result, nil
+	return result, nil, nil
 }
 
 func (s *Sections) windowsList(ctx context.Context, idRazd, idOtdel string) ([]int, error) {
-	r, err := s.db.QueryContext(ctx, `SELECT id_wnd FROM window WHERE razdel = ? AND id_otdel = ?`, idRazd, idOtdel)
+	sql := `SELECT id_wnd FROM window WHERE razdel = ? AND id_otdel = ?`
+	r, err := s.db.QueryContext(ctx, sql, idRazd, idOtdel)
 	if err != nil {
 		return nil, errors.Wrapf(errs.ErrInternalDatabase, "retrieving windows: %v", err)
 	}

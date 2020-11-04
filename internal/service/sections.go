@@ -9,6 +9,10 @@ import (
 	"skat-vending.com/selection-info/pkg/api"
 )
 
+const (
+	operationSuccess = "Операция выполнена успешно"
+)
+
 // Sections represents service for sections management
 type Sections struct {
 	dal *dal.Sections
@@ -22,29 +26,52 @@ func NewSections(db *sql.DB) *Sections {
 }
 
 // Get returns all sections info
-func (s *Sections) Get(ctx context.Context, req api.SectionRequest) (*api.Section, error) {
-	sec, err := s.dal.GetSectionBaseParams(ctx, req.IdRazdel)
+func (s *Sections) Get(ctx context.Context, req api.SectionRequest) (api.Section, error) {
+	sec, desc, err := s.dal.GetSectionBaseParams(ctx, req.IdRazdel)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed get base section params")
+		section := api.Section{
+			Success: false,
+			Description: []api.Description{
+				*desc,
+			},
+		}
+		return section, errors.Wrapf(err, "failed get base section params")
 	}
 
-	innerThemes, err := s.dal.InnerThemesList(ctx, req.IdRazdel, req.IdOperator, req.IdOtdel)
+	innerThemes, desc, err := s.dal.InnerThemesList(ctx, req.IdRazdel, req.IdOperator, req.IdOtdel)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed get inner themes")
+		section := api.Section{
+			Success: false,
+			Description: []api.Description{
+				*desc,
+			},
+		}
+		return section, errors.Wrapf(err, "failed get inner themes")
 	}
 
-	outerThemes, err := s.dal.OuterThemesList(ctx, req.IdRazdel)
+	outerThemes, desc, err := s.dal.OuterThemesList(ctx, req.IdRazdel)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed get inner themes")
+		section := api.Section{
+			Success: false,
+			Description: []api.Description{
+				*desc,
+			},
+		}
+		return section, errors.Wrapf(err, "failed get inner themes")
 	}
 
-	section := &api.Section{
-		Success:          true,
+	section := api.Section{
+		Success: true,
+		Description: []api.Description{
+			{
+				Message: operationSuccess,
+			},
+		},
 		NameRazdel:       sec.NameRazdel,
 		Archive:          sec.Archive,
 		DateArchive:      sec.DateArchive,
 		CountInnerThemes: len(innerThemes),
-		CountOuterThemes: len(innerThemes),
+		CountOuterThemes: len(outerThemes),
 		InnerThemes:      innerThemes,
 		OuterThemes:      outerThemes,
 		OtdelRazdel:      make(map[string]api.Otdel),
