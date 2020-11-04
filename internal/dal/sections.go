@@ -53,8 +53,11 @@ func (s *Sections) InnerThemesList(ctx context.Context, idRazd, idOperator, idOt
 	for r.Next() {
 		innnerTheme, err := s.innerThemeFromRecord(r)
 		if err != nil {
-			logrus.WithError(err).Error("load inner theme record from database")
-			continue
+			description := &api.Description{
+				Message: "load inner theme record from database",
+				Reason:  utils.String(fmt.Sprintf("%s; idRazd=%s, idOperator=%s, idOtdel=%s", sql, idRazd, idOperator, idOtdel)),
+			}
+			return nil, description, errors.Wrapf(errs.ErrInternalDatabase, "load inner theme record from database: %v", err)
 		}
 		result = append(result, *innnerTheme)
 	}
@@ -88,8 +91,11 @@ func (s *Sections) OuterThemesList(ctx context.Context, idRazd string) ([]api.Ou
 	for r.Next() {
 		outerTheme, err := s.outerThemeFromRecord(r)
 		if err != nil {
-			logrus.WithError(err).Error("load inner theme record from database")
-			continue
+			description := &api.Description{
+				Message: "load outer theme record from database",
+				Reason:  utils.String(fmt.Sprintf("%s; idRazd=%s", sql, idRazd)),
+			}
+			return nil, description, errors.Wrapf(errs.ErrInternalDatabase, "load outer theme record from database: %v", err)
 		}
 		result = append(result, *outerTheme)
 	}
@@ -150,14 +156,20 @@ func (s *Sections) GetOtdelRazdel(ctx context.Context, idRazd, idOtdel string) (
 			limit string
 		)
 		if err := r.Scan(&id, &limit); err != nil {
-			logrus.WithError(err).Error("scan idOtdel and limit from record")
-			continue
+			description := &api.Description{
+				Message: "scan idOtdel and limit from record",
+				Reason:  utils.String(fmt.Sprintf("%s; idRazd=%s, idOtdel=%s", sql, idRazd, idOtdel)),
+			}
+			return nil, description, errors.Wrapf(errs.ErrInternalDatabase, "scan idOtdel and limit from record: %v", err)
 		}
 
 		windows, err := s.windowsList(ctx, idRazd, idOtdel)
 		if err != nil {
-			logrus.WithError(err).Error("scan idOtdel and limit from record")
-			continue
+			description := &api.Description{
+				Message: "scan idOtdel and limit from record",
+				Reason:  utils.String(fmt.Sprintf("%s; idRazd=%s, idOtdel=%s", sql, idRazd, idOtdel)),
+			}
+			return nil, description, errors.Wrapf(errs.ErrInternalDatabase, "scan idOtdel and limit from record: %v", err)
 		}
 
 		result[string(id)] = api.Otdel{
@@ -181,8 +193,7 @@ func (s *Sections) windowsList(ctx context.Context, idRazd, idOtdel string) ([]i
 	for r.Next() {
 		var id int
 		if err := r.Scan(&id); err != nil {
-			logrus.WithError(err).Error("load window id record from database")
-			continue
+			return nil, errors.Wrapf(errs.ErrInternalDatabase, "load window id record from database: %v", err)
 		}
 		result = append(result, id)
 	}
@@ -209,7 +220,7 @@ func (s *Sections) outerThemeFromRecord(r *sql.Rows) (*api.OuterTheme, error) {
 	var (
 		id   int
 		name string
-		tax  int
+		tax  bool
 	)
 	if err := r.Scan(&id, &name, &tax); err != nil {
 		return nil, errors.Wrapf(errs.ErrInternalDatabase, "scan outer theme from record: %v", err)
@@ -226,7 +237,7 @@ func (s *Sections) sectionFromRecord(r *sql.Rows) (*api.Section, error) {
 	var (
 		nameRazdel  string
 		archive     bool
-		dateArchive string
+		dateArchive *string
 	)
 	if err := r.Scan(&nameRazdel, &archive, &dateArchive); err != nil {
 		return nil, errors.Wrapf(errs.ErrInternalDatabase, "scan section from record: %v", err)
