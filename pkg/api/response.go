@@ -3,7 +3,7 @@ package api
 // Section is a response structure.
 type Section struct {
 	Success          bool             `json:"success" example:"false"`
-	Message          string           `json:"message" example:"qwerty"`
+	Description      []Description    `json:"description"`
 	NameRazdel       string           `json:"name_razdel" example:"qwerty"`
 	Archive          bool             `json:"archive" example:"false"`
 	DateArchive      string           `json:"date_archive" example:"2016-02-20"`
@@ -28,4 +28,10 @@ type OuterTheme struct {
 type Otdel struct {
 	Windows []int  `json:"windows" example:""`
 	Limit   string `json:"limit" example:""`
+}
+
+type Description struct {
+	Message    string  `json:"message" example:"Операция выполнена успешно"`
+	Reason     *string `json:"reason" example:""`
+	Stacktrace *string `json:"stacktrace" example:""`
 }

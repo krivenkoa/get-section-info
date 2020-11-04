@@ -7,6 +7,9 @@ import (
 	"net/http"
 
 	wrapper "github.com/pkg/errors"
+
+	"skat-vending.com/selection-info/internal/utils"
+	"skat-vending.com/selection-info/pkg/api"
 )
 
 const defaultContentType = ContentTypeJSON
@@ -21,7 +24,16 @@ func ReadBody(w http.ResponseWriter, r *http.Request, req interface{}) error {
 		// TODO: use second argument (mime params)
 		mediatype, _, err := mime.ParseMediaType(h)
 		if err != nil {
-			WriteBadCode(w, r, http.StatusUnsupportedMediaType, err.Error())
+			res := &api.Section{
+				Success: false,
+				Description: []api.Description{
+					{
+						Message:    "unsupported media type",
+						Stacktrace: utils.String(err.Error()),
+					},
+				},
+			}
+			WriteBadCode(w, r, res, http.StatusUnsupportedMediaType)
 			return fmt.Errorf("couldn't parse content-type: '%s'", contentType)
 		}
 		contentType = mediatype
@@ -31,13 +43,31 @@ func ReadBody(w http.ResponseWriter, r *http.Request, req interface{}) error {
 		{
 			err := json.NewDecoder(r.Body).Decode(req)
 			if err != nil {
-				WriteBadCode(w, r, http.StatusBadRequest, err.Error())
+				res := &api.Section{
+					Success: false,
+					Description: []api.Description{
+						{
+							Message:    "error reading content of json type",
+							Stacktrace: utils.String(err.Error()),
+						},
+					},
+				}
+				WriteBadCode(w, r, res, http.StatusBadRequest)
 				return wrapper.Wrap(err, "error reading content of json type")
 			}
 		}
 	default:
 		{
-			WriteBadCode(w, r, http.StatusUnsupportedMediaType, "unsupported content-type")
+			res := &api.Section{
+				Success: false,
+				Description: []api.Description{
+					{
+						Message: "unsupported content-type",
+						Reason:  utils.String(fmt.Sprintf("content-type: '%s'", contentType)),
+					},
+				},
+			}
+			WriteBadCode(w, r, res, http.StatusUnsupportedMediaType)
 			return fmt.Errorf("unsupported content-type: '%s'", contentType)
 		}
 	}
