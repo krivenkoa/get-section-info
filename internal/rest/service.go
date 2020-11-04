@@ -34,6 +34,6 @@ type Service struct {
 func (s *Service) Mount(r *chi.Mux) {
 	r.Get("/swagger/*", httpSwagger.Handler())
 	r.Route("/api/v1", func(r chi.Router) {
-		r.Get("/sections", s.getSections) // Get /sections
+		r.Post("/sections", s.getSections) // Post /sections
 	})
 }

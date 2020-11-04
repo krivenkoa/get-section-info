@@ -23,14 +23,31 @@ func NewSections(db *sql.DB) *Sections {
 
 // Get returns all sections info
 func (s *Sections) Get(ctx context.Context, req api.SectionRequest) (*api.Section, error) {
+	sec, err := s.dal.GetSectionBaseParams(ctx, req.IdRazdel)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed get base section params")
+	}
+
 	innerThemes, err := s.dal.InnerThemesList(ctx, req.IdRazdel, req.IdOperator, req.IdOtdel)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed get inner themes")
 	}
 
+	outerThemes, err := s.dal.OuterThemesList(ctx, req.IdRazdel)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed get inner themes")
+	}
+
 	section := &api.Section{
+		Success:          true,
+		NameRazdel:       sec.NameRazdel,
+		Archive:          sec.Archive,
+		DateArchive:      sec.DateArchive,
 		CountInnerThemes: len(innerThemes),
+		CountOuterThemes: len(innerThemes),
 		InnerThemes:      innerThemes,
+		OuterThemes:      outerThemes,
+		OtdelRazdel:      make(map[string]api.Otdel),
 	}
 
 	return section, nil
