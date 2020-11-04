@@ -57,7 +57,18 @@ func (s *Sections) Get(ctx context.Context, req api.SectionRequest) (api.Section
 				*desc,
 			},
 		}
-		return section, errors.Wrapf(err, "failed get inner themes")
+		return section, errors.Wrapf(err, "failed get outer themes")
+	}
+
+	otdelRazdel, desc, err := s.dal.GetOtdelRazdel(ctx, req.IdRazdel, req.IdOtdel)
+	if err != nil {
+		section := api.Section{
+			Success: false,
+			Description: []api.Description{
+				*desc,
+			},
+		}
+		return section, errors.Wrapf(err, "failed get otdel razdel")
 	}
 
 	section := api.Section{
@@ -74,7 +85,7 @@ func (s *Sections) Get(ctx context.Context, req api.SectionRequest) (api.Section
 		CountOuterThemes: len(outerThemes),
 		InnerThemes:      innerThemes,
 		OuterThemes:      outerThemes,
-		OtdelRazdel:      make(map[string]api.Otdel),
+		OtdelRazdel:      otdelRazdel,
 	}
 
 	return section, nil

@@ -6,7 +6,7 @@ type Section struct {
 	Description      []Description    `json:"description"`
 	NameRazdel       string           `json:"name_razdel" example:"qwerty"`
 	Archive          bool             `json:"archive" example:"false"`
-	DateArchive      string           `json:"date_archive" example:"2016-02-20"`
+	DateArchive      *string          `json:"date_archive" example:"2016-02-20"`
 	CountInnerThemes int              `json:"count_inner_themes" example:"0"`
 	CountOuterThemes int              `json:"count_outer_themes" example:"0"`
 	InnerThemes      []InnerTheme     `json:"inner_themes" example:""`
@@ -22,7 +22,7 @@ type InnerTheme struct {
 type OuterTheme struct {
 	IdTheme   int    `json:"id_theme" example:"123"`
 	NameTheme string `json:"name_theme" example:""`
-	Tax       int    `json:"tax" example:"2344"`
+	Tax       bool   `json:"tax" example:"true"`
 }
 
 type Otdel struct {
